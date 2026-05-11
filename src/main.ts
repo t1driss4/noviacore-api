@@ -1,10 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  app.use(helmet());
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -14,7 +18,11 @@ async function bootstrap() {
     }),
   );
 
-  app.enableCors();
+  app.useGlobalFilters(new HttpExceptionFilter());
+
+  const allowedOrigins = process.env.CORS_ORIGIN?.split(',') ?? ['http://localhost:3000'];
+  app.enableCors({ origin: allowedOrigins, credentials: true });
+
   app.setGlobalPrefix('api/v1');
 
   const config = new DocumentBuilder()
